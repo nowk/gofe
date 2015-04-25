@@ -1,23 +1,23 @@
 package gofe
 
+import (
+	"reflect"
+)
+
 type Testing interface {
 	Errorf(string, ...interface{})
 }
 
-type StepFunc func(Testing) func(...interface{})
+type StepFunc interface{}
 
-type Store struct {
-	steps map[string]StepFunc
+type Steps map[string]StepFunc
+
+func NewSteps() Steps {
+	return make(map[string]StepFunc)
 }
 
-func NewStore() *Store {
-	return &Store{
-		steps: make(map[string]StepFunc),
-	}
-}
-
-func (s *Store) Steps(name string, fn StepFunc) {
-	s.steps[name] = fn
+func (s Steps) Steps(name string, fn StepFunc) {
+	s[name] = fn
 }
 
 type step struct {
@@ -26,28 +26,34 @@ type step struct {
 }
 
 type Feature struct {
-	stores []*Store
-	steps  []step
+	t     Testing
+	Steps []Steps
 }
 
-func New(fe ...*Store) *Feature {
+func New(t Testing, s ...Steps) *Feature {
 	return &Feature{
-		stores: fe,
+		t:     t,
+		Steps: s,
 	}
 }
 
 func (f *Feature) Step(name string, v ...interface{}) {
-	for _, st := range f.stores {
-		if fn, ok := st.steps[name]; ok {
-			f.steps = append(f.steps, step{fn, v})
+	for _, s := range f.Steps {
+		if fn, ok := s[name]; ok {
+			t := reflect.TypeOf(fn)
+			stepFunc := reflect.ValueOf(fn).Call([]reflect.Value{
+				reflect.ValueOf(f.t),
+			})
 
+			t = reflect.TypeOf(stepFunc[0].Interface())
+
+			args := make([]reflect.Value, t.NumIn())
+			for i := 0; i < len(args); i++ {
+				args[i] = reflect.ValueOf(v[i])
+			}
+
+			stepFunc[0].Call(args)
 			return
 		}
-	}
-}
-
-func (f *Feature) Test(t Testing) {
-	for _, v := range f.steps {
-		v.fn(t)(v.v...)
 	}
 }

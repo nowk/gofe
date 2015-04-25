@@ -17,24 +17,21 @@ func (t *tTesting) Errorf(f string, v ...interface{}) {
 func TestSteps(t *testing.T) {
 	tT := new(tTesting)
 
-	st := NewStore()
-	st.Steps("1 + n = 4", func(t Testing) func(...interface{}) {
-		return func(v ...interface{}) {
-			n := v[0].(int)
-
-			if 1+n != 4 {
-				t.Errorf("1 + %d != 4", n)
+	s := NewSteps()
+	s.Steps("a + b = 4", func(t Testing) func(int, int) {
+		return func(a, b int) {
+			if a+b != 4 {
+				t.Errorf("%d + %d != 4", a, b)
 			} else {
-				t.Errorf("1 + %d == 4", n)
+				t.Errorf("%d + %d == 4", a, b)
 			}
 		}
 	})
 
-	fe := New(st)
-	fe.Step("1 + n = 4", 2)
-	fe.Step("1 + n = 4", 3)
-	fe.Step("1 + n = 4", 4)
-	fe.Test(tT)
+	fe := New(tT, s)
+	fe.Step("a + b = 4", 1, 2)
+	fe.Step("a + b = 4", 1, 3)
+	fe.Step("a + b = 4", 1, 4)
 
 	assert.Equal(t, "1 + 2 != 4", tT.errorfs[0])
 	assert.Equal(t, "1 + 3 == 4", tT.errorfs[1])
