@@ -100,3 +100,26 @@ func TestStepsIsFuncWithTestingArg(t *testing.T) {
 		})
 	})
 }
+
+func TestStepsIsFuncThatReturnsFunc(t *testing.T) {
+	str := "steps must return a single func"
+
+	s := NewSteps()
+	assert.Panic(t, str, func() {
+		s.Steps("a step", func(t Testing) {
+			//
+		})
+	})
+
+	assert.Panic(t, str, func() {
+		s.Steps("a step", func(t Testing) string {
+			return ""
+		})
+	})
+
+	assert.Panic(t, str, func() {
+		s.Steps("a step", func(t Testing) (func(), func()) {
+			return func() {}, func() {}
+		})
+	})
+}

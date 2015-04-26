@@ -22,6 +22,7 @@ func NewSteps() Steps {
 
 var (
 	errNotFuncTesting = fmt.Errorf("steps must implement func(Testing) func(...)")
+	errMustReturnFunc = fmt.Errorf("steps must return a single func")
 )
 
 func (s Steps) Steps(name string, fn StepFunc) {
@@ -36,6 +37,15 @@ func (s Steps) Steps(name string, fn StepFunc) {
 	}
 	if !reflect.TypeOf(tt).Implements(a) {
 		panic(errNotFuncTesting)
+	}
+
+	if t.NumOut() != 1 {
+		panic(errMustReturnFunc)
+	}
+
+	p := t.Out(0)
+	if p.Kind() != reflect.Func {
+		panic(errMustReturnFunc)
 	}
 
 	s[name] = fn
