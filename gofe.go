@@ -25,27 +25,34 @@ var (
 	errMustReturnFunc = fmt.Errorf("steps must return a single func")
 )
 
-func (s Steps) Steps(name string, fn StepFunc) {
+func checkStep(fn StepFunc) error {
 	t := reflect.TypeOf(fn)
 	if t.NumIn() != 1 {
-		panic(errNotFuncTesting)
+		return errNotFuncTesting
 	}
-
 	a := t.In(0)
 	if a.Kind() != reflect.Interface {
-		panic(errNotFuncTesting)
+		return errNotFuncTesting
 	}
 	if !reflect.TypeOf(tt).Implements(a) {
-		panic(errNotFuncTesting)
+		return errNotFuncTesting
 	}
 
 	if t.NumOut() != 1 {
-		panic(errMustReturnFunc)
+		return errMustReturnFunc
 	}
-
 	p := t.Out(0)
 	if p.Kind() != reflect.Func {
-		panic(errMustReturnFunc)
+		return errMustReturnFunc
+	}
+
+	return nil
+}
+
+func (s Steps) Steps(name string, fn StepFunc) {
+	err := checkStep(fn)
+	if err != nil {
+		panic(err)
 	}
 
 	s[name] = fn
