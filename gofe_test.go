@@ -8,10 +8,15 @@ import (
 
 type tTesting struct {
 	errorfs []string
+	fatals  []string
 }
 
 func (t *tTesting) Errorf(f string, v ...interface{}) {
 	t.errorfs = append(t.errorfs, fmt.Sprintf(f, v...))
+}
+
+func (t *tTesting) Fatal(v ...interface{}) {
+	t.fatals = append(t.fatals, fmt.Sprint(v...))
 }
 
 func TestStepsBasicTypes(t *testing.T) {
@@ -135,4 +140,13 @@ func TestStepsHaveUniqueNames(t *testing.T) {
 			return func() {}
 		})
 	})
+}
+
+func TestStepNotFound(t *testing.T) {
+	tT := &tTesting{}
+
+	fe := New(tT, NewSteps())
+	fe.Step("some step")
+
+	assert.Equal(t, "`some step`: step not found", tT.fatals[0])
 }

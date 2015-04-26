@@ -8,6 +8,7 @@ import (
 
 type Testing interface {
 	Errorf(string, ...interface{})
+	Fatal(...interface{})
 }
 
 var tt Testing = &testing.T{}
@@ -93,15 +94,15 @@ func (f Feature) findStep(name string) (StepFunc, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("%s: step not foudn", name)
+	return nil, fmt.Errorf("`%s`: step not found", name)
 }
 
-func (f Feature) stepfn(name string) (reflect.Value, []reflect.Value) {
+func (f Feature) stepfn(name string) (reflect.Value, []reflect.Value, error) {
 	var fn reflect.Value
 
 	stepFunc, err := f.findStep(name)
 	if err != nil {
-		return fn, nil
+		return fn, nil, err
 	}
 
 	// call func(Testing) func(...)
@@ -112,11 +113,17 @@ func (f Feature) stepfn(name string) (reflect.Value, []reflect.Value) {
 	t := fn.Type()
 	a := make([]reflect.Value, t.NumIn())
 
-	return fn, a
+	return fn, a, nil
 }
 
 func (f Feature) Step(name string, a ...interface{}) {
-	fn, args := f.stepfn(name)
+	fn, args, err := f.stepfn(name)
+	if err != nil {
+		f.t.Fatal(err)
+
+		return // actual testing package will exit, just for testing
+	}
+
 	for i := 0; i < len(a); i++ {
 		args[i] = reflect.ValueOf(a[i])
 	}
