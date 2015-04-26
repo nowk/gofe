@@ -37,3 +37,33 @@ func TestStepsBasicTypes(t *testing.T) {
 	assert.Equal(t, "1 + 3 == 4", tT.errorfs[1])
 	assert.Equal(t, "1 + 4 != 4", tT.errorfs[2])
 }
+
+func TestStepsStructTypes(t *testing.T) {
+	tT := new(tTesting)
+
+	type User struct {
+		Name string
+	}
+
+	s := NewSteps()
+	s.Steps("user has name", func(t Testing) func(*User, string) {
+		return func(u *User, name string) {
+			if u.Name != name {
+				t.Errorf("%s != %s", u.Name, name)
+			} else {
+				t.Errorf("%s == %s", u.Name, name)
+			}
+		}
+	})
+
+	u := &User{
+		Name: "Batman",
+	}
+
+	fe := New(tT, s)
+	fe.Step("user has name", u, "Batman")
+	fe.Step("user has name", u, "Spongebob")
+
+	assert.Equal(t, "Batman == Batman", tT.errorfs[0])
+	assert.Equal(t, "Batman != Spongebob", tT.errorfs[1])
+}
