@@ -2,8 +2,9 @@ package gofe
 
 import (
 	"fmt"
-	"gopkg.in/nowk/assert.v2"
 	"testing"
+
+	"gopkg.in/nowk/assert.v2"
 )
 
 type tTesting struct {
