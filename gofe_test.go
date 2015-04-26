@@ -14,7 +14,7 @@ func (t *tTesting) Errorf(f string, v ...interface{}) {
 	t.errorfs = append(t.errorfs, fmt.Sprintf(f, v...))
 }
 
-func TestSteps(t *testing.T) {
+func TestStepsBasicTypes(t *testing.T) {
 	tT := new(tTesting)
 
 	s := NewSteps()
