@@ -67,3 +67,36 @@ func TestStepsStructTypes(t *testing.T) {
 	assert.Equal(t, "Batman == Batman", tT.errorfs[0])
 	assert.Equal(t, "Batman != Spongebob", tT.errorfs[1])
 }
+
+func TestStepsIsFuncWithTestingArg(t *testing.T) {
+	str := "steps must implement func(Testing) func(...)"
+
+	s := NewSteps()
+	assert.Panic(t, str, func() {
+		s.Steps("a step", func() {
+			//
+		})
+	})
+
+	assert.Panic(t, str, func() {
+		s.Steps("a step", func(s string) {
+			//
+		})
+	})
+
+	assert.Panic(t, str, func() {
+		s.Steps("a step", func(t *testing.T) {
+			//
+		})
+	})
+
+	type NotATestingInterface interface {
+		Foo()
+	}
+
+	assert.Panic(t, str, func() {
+		s.Steps("a step", func(t NotATestingInterface) {
+			//
+		})
+	})
+}

@@ -3,11 +3,14 @@ package gofe
 import (
 	"fmt"
 	"reflect"
+	"testing"
 )
 
 type Testing interface {
 	Errorf(string, ...interface{})
 }
+
+var tt Testing = &testing.T{}
 
 type StepFunc interface{}
 
@@ -17,7 +20,24 @@ func NewSteps() Steps {
 	return make(map[string]StepFunc)
 }
 
+var (
+	errNotFuncTesting = fmt.Errorf("steps must implement func(Testing) func(...)")
+)
+
 func (s Steps) Steps(name string, fn StepFunc) {
+	t := reflect.TypeOf(fn)
+	if t.NumIn() != 1 {
+		panic(errNotFuncTesting)
+	}
+
+	a := t.In(0)
+	if a.Kind() != reflect.Interface {
+		panic(errNotFuncTesting)
+	}
+	if !reflect.TypeOf(tt).Implements(a) {
+		panic(errNotFuncTesting)
+	}
+
 	s[name] = fn
 }
 
