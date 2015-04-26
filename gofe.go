@@ -25,6 +25,17 @@ var (
 	errMustReturnFunc = fmt.Errorf("steps must return a single func")
 )
 
+// checkStep checks to make sure the StepFunc given for any step meets the
+// required implmenetation of func(Testing) func(...)
+//
+//		s.Steps("a step", func(t Testing) func(string, string) {
+//			return func(a, b string) {
+//				if a != b {
+//					t.Errorf("%s != %s", a, b)
+//				}
+//			}
+//		})
+//
 func checkStep(fn StepFunc) error {
 	t := reflect.TypeOf(fn)
 	if t.NumIn() != 1 {
