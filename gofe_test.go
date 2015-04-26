@@ -18,7 +18,7 @@ func TestStepsBasicTypes(t *testing.T) {
 	tT := new(tTesting)
 
 	s := NewSteps()
-	s.Steps("a + b = 4", func(t Testing) func(int, int) {
+	s.Add("a + b = 4", func(t Testing) func(int, int) {
 		return func(a, b int) {
 			if a+b != 4 {
 				t.Errorf("%d + %d != 4", a, b)
@@ -46,7 +46,7 @@ func TestStepsStructTypes(t *testing.T) {
 	}
 
 	s := NewSteps()
-	s.Steps("user has name", func(t Testing) func(*User, string) {
+	s.Add("user has name", func(t Testing) func(*User, string) {
 		return func(u *User, name string) {
 			if u.Name != name {
 				t.Errorf("%s != %s", u.Name, name)
@@ -73,19 +73,19 @@ func TestStepsIsFuncWithTestingArg(t *testing.T) {
 
 	s := NewSteps()
 	assert.Panic(t, str, func() {
-		s.Steps("a step", func() {
+		s.Add("a step", func() {
 			//
 		})
 	})
 
 	assert.Panic(t, str, func() {
-		s.Steps("a step", func(s string) {
+		s.Add("a step", func(s string) {
 			//
 		})
 	})
 
 	assert.Panic(t, str, func() {
-		s.Steps("a step", func(t *testing.T) {
+		s.Add("a step", func(t *testing.T) {
 			//
 		})
 	})
@@ -95,7 +95,7 @@ func TestStepsIsFuncWithTestingArg(t *testing.T) {
 	}
 
 	assert.Panic(t, str, func() {
-		s.Steps("a step", func(t NotATestingInterface) {
+		s.Add("a step", func(t NotATestingInterface) {
 			//
 		})
 	})
@@ -106,19 +106,19 @@ func TestStepsIsFuncThatReturnsFunc(t *testing.T) {
 
 	s := NewSteps()
 	assert.Panic(t, str, func() {
-		s.Steps("a step", func(t Testing) {
+		s.Add("a step", func(t Testing) {
 			//
 		})
 	})
 
 	assert.Panic(t, str, func() {
-		s.Steps("a step", func(t Testing) string {
+		s.Add("a step", func(t Testing) string {
 			return ""
 		})
 	})
 
 	assert.Panic(t, str, func() {
-		s.Steps("a step", func(t Testing) (func(), func()) {
+		s.Add("a step", func(t Testing) (func(), func()) {
 			return func() {}, func() {}
 		})
 	})
@@ -126,12 +126,12 @@ func TestStepsIsFuncThatReturnsFunc(t *testing.T) {
 
 func TestStepsHaveUniqueNames(t *testing.T) {
 	s := NewSteps()
-	s.Steps("a + b = n", func(t Testing) func() {
+	s.Add("a + b = n", func(t Testing) func() {
 		return func() {}
 	})
 
 	assert.Panic(t, "step `a + b = n` already exists", func() {
-		s.Steps("a + b = n", func(t Testing) func() {
+		s.Add("a + b = n", func(t Testing) func() {
 			return func() {}
 		})
 	})

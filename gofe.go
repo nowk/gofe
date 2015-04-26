@@ -60,7 +60,7 @@ func checkStep(fn StepFunc) error {
 	return nil
 }
 
-func (s Steps) Steps(name string, fn StepFunc) {
+func (s Steps) Add(name string, fn StepFunc) {
 	if _, ok := s[name]; ok {
 		panic(fmt.Sprintf("step `%s` already exists", name))
 	}
