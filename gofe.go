@@ -20,11 +20,6 @@ func (s Steps) Steps(name string, fn StepFunc) {
 	s[name] = fn
 }
 
-type step struct {
-	fn StepFunc
-	v  []interface{}
-}
-
 type Feature struct {
 	t     Testing
 	Steps []Steps
