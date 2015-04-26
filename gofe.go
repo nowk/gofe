@@ -58,10 +58,23 @@ func checkStep(fn StepFunc) error {
 		return errMustReturnFunc
 	}
 
+	// check for context
+	c := reflect.ValueOf(Context{})
+	for i := 0; i < p.NumIn(); i++ {
+		a := p.In(i)
+		if a.Kind() == c.Kind() {
+			if i != 0 {
+				return fmt.Errorf("context must be the first argument")
+			}
+		}
+	}
+
 	return nil
 }
 
-func (s Steps) Add(name string, fn StepFunc) {
+// Add adds a StepFunc by name. It always returns nil to allow steps to be added
+// without using an init() or some sort of initialization block
+func (s Steps) Add(name string, fn StepFunc) interface{} {
 	_, ok := s[name]
 	if ok {
 		panic(fmt.Sprintf("step `%s` already exists", name))
@@ -73,18 +86,39 @@ func (s Steps) Add(name string, fn StepFunc) {
 	}
 
 	s[name] = fn
+
+	return nil
+}
+
+type Context map[string]interface{}
+
+func (c Context) Get(k string) (interface{}, bool) {
+	v, ok := c[k]
+	if !ok {
+		return nil, false
+	}
+
+	return v, true
 }
 
 type Feature struct {
 	t     Testing
 	Steps []Steps
+
+	context Context
 }
 
 func New(t Testing, s ...Steps) *Feature {
 	return &Feature{
 		t:     t,
 		Steps: s,
+
+		context: make(map[string]interface{}),
 	}
+}
+
+func (f *Feature) Context(c map[string]interface{}) {
+	f.context = c
 }
 
 func (f Feature) findStep(name string) (StepFunc, error) {
@@ -111,7 +145,14 @@ func (f Feature) stepfn(name string) (reflect.Value, []reflect.Value, error) {
 	})
 	fn = v[0]
 	t := fn.Type()
-	a := make([]reflect.Value, t.NumIn())
+	a := make([]reflect.Value, 0, t.NumIn())
+
+	if t.NumIn() > 0 {
+		c := t.In(0)
+		if c.Kind() == reflect.TypeOf(Context{}).Kind() {
+			a = append(a, reflect.ValueOf(f.context))
+		}
+	}
 
 	return fn, a, nil
 }
@@ -124,9 +165,24 @@ func (f Feature) Step(name string, a ...interface{}) {
 		return // actual testing package will exit, just for testing
 	}
 
-	for i := 0; i < len(a); i++ {
-		args[i] = reflect.ValueOf(a[i])
+	pre := len(args) // number of args that comes predefined from stepfn
+	for i := 0; i < cap(args)-pre; i++ {
+		args = append(args, reflect.ValueOf(a[i]))
 	}
 
 	fn.Call(args)
+}
+
+func (f Feature) And(name string, a ...interface{}) {
+	f.Step(name, a...)
+}
+
+// And_ is a short to Step. The appended _ underscore is there for alignment
+// with Step.
+//
+//		fe.Step(...)
+//		fe.And_(...)
+//
+func (f Feature) And_(name string, a ...interface{}) {
+	f.Step(name, a...)
 }

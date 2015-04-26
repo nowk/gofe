@@ -151,3 +151,42 @@ func TestStepNotFound(t *testing.T) {
 
 	assert.Equal(t, "`some step`: step not found", tT.fatals[0])
 }
+
+func TestContextIsPassedAsFirstArgumentIfDefined(t *testing.T) {
+	tT := &tTesting{}
+
+	s := NewSteps()
+	s.Add("Batman's first name is ...", func(t Testing) func(Context) {
+		return func(c Context) {
+			v, _ := c.Get("first_name")
+			t.Errorf("Batman's first name is %s", v.(string))
+		}
+	})
+	s.Add("Batman's full name is ...", func(t Testing) func(Context, string) {
+		return func(c Context, last string) {
+			v, _ := c.Get("first_name")
+			t.Errorf("Batman's full name is %s %s", v.(string), last)
+		}
+	})
+
+	fe := New(tT, s)
+	fe.Context(map[string]interface{}{
+		"first_name": "Bruce",
+	})
+	fe.Step("Batman's first name is ...")
+	fe.Step("Batman's full name is ...", "Wayne")
+
+	assert.Equal(t, "Batman's first name is Bruce", tT.errorfs[0])
+	assert.Equal(t, "Batman's full name is Bruce Wayne", tT.errorfs[1])
+}
+
+func TestContextCanOnlyBeTheFirstArg(t *testing.T) {
+	s := NewSteps()
+	assert.Panic(t, "context must be the first argument", func() {
+		s.Add("a step", func(t Testing) func(string, Context) {
+			return func(a string, c Context) {
+				//
+			}
+		})
+	})
+}
