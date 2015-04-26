@@ -61,11 +61,12 @@ func checkStep(fn StepFunc) error {
 }
 
 func (s Steps) Steps(name string, fn StepFunc) {
-	err := checkStep(fn)
-	if err != nil {
+	if _, ok := s[name]; ok {
+		panic(fmt.Sprintf("step `%s` already exists", name))
+	}
+	if err := checkStep(fn); err != nil {
 		panic(err)
 	}
-
 	s[name] = fn
 }
 

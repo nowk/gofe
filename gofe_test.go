@@ -123,3 +123,16 @@ func TestStepsIsFuncThatReturnsFunc(t *testing.T) {
 		})
 	})
 }
+
+func TestStepsHaveUniqueNames(t *testing.T) {
+	s := NewSteps()
+	s.Steps("a + b = n", func(t Testing) func() {
+		return func() {}
+	})
+
+	assert.Panic(t, "step `a + b = n` already exists", func() {
+		s.Steps("a + b = n", func(t Testing) func() {
+			return func() {}
+		})
+	})
+}
