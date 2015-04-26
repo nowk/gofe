@@ -96,12 +96,12 @@ func (f Feature) findStep(name string) (StepFunc, error) {
 	return nil, fmt.Errorf("%s: step not foudn", name)
 }
 
-func (f Feature) stepfn(name string) (reflect.Value, []reflect.Value, error) {
+func (f Feature) stepfn(name string) (reflect.Value, []reflect.Value) {
 	var fn reflect.Value
 
 	stepFunc, err := f.findStep(name)
 	if err != nil {
-		return fn, nil, err
+		return fn, nil
 	}
 
 	// call func(Testing) func(...)
@@ -109,23 +109,14 @@ func (f Feature) stepfn(name string) (reflect.Value, []reflect.Value, error) {
 		reflect.ValueOf(f.t),
 	})
 	fn = v[0]
-
 	t := fn.Type()
-	if t.Kind() != reflect.Func {
-		panic("must be a func")
-	}
-
 	a := make([]reflect.Value, t.NumIn())
 
-	return fn, a, nil
+	return fn, a
 }
 
 func (f Feature) Step(name string, a ...interface{}) {
-	fn, args, err := f.stepfn(name)
-	if err != nil {
-		// TODO handle
-	}
-
+	fn, args := f.stepfn(name)
 	for i := 0; i < len(a); i++ {
 		args[i] = reflect.ValueOf(a[i])
 	}
