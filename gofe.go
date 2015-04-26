@@ -1,6 +1,7 @@
 package gofe
 
 import (
+	"fmt"
 	"reflect"
 )
 
@@ -32,41 +33,49 @@ func New(t Testing, s ...Steps) *Feature {
 	}
 }
 
-func (f Feature) findStep(name string) (reflect.Value, int, error) {
-	var stepFunc StepFunc
-
+func (f Feature) findStep(name string) (StepFunc, error) {
 	for _, v := range f.Steps {
-		if fn, ok := v[name]; ok {
-			stepFunc = fn
-
-			break // step found
+		if f, ok := v[name]; ok {
+			return f, nil
 		}
 	}
-	if stepFunc == nil {
-		return reflect.Value{}, 0, nil
-	}
 
-	s := reflect.ValueOf(stepFunc).Call([]reflect.Value{
-		reflect.ValueOf(f.t),
-	})
-
-	// TODO check count for len == 1
-
-	fn := s[0]
-	to := reflect.TypeOf(fn.Interface())
-	return fn, to.NumIn(), nil
+	return nil, fmt.Errorf("%s: step not foudn", name)
 }
 
-func (f Feature) Step(name string, v ...interface{}) {
-	fn, n, err := f.findStep(name)
+func (f Feature) stepfn(name string) (reflect.Value, []reflect.Value, error) {
+	var fn reflect.Value
+
+	stepFunc, err := f.findStep(name)
+	if err != nil {
+		return fn, nil, err
+	}
+
+	// call func(Testing) func(...)
+	v := reflect.ValueOf(stepFunc).Call([]reflect.Value{
+		reflect.ValueOf(f.t),
+	})
+	fn = v[0]
+
+	t := fn.Type()
+	if t.Kind() != reflect.Func {
+		panic("must be a func")
+	}
+
+	a := make([]reflect.Value, t.NumIn())
+
+	return fn, a, nil
+}
+
+func (f Feature) Step(name string, a ...interface{}) {
+	fn, args, err := f.stepfn(name)
 	if err != nil {
 		// TODO handle
 	}
 
-	argv := make([]reflect.Value, n)
-	for i := 0; i < len(argv); i++ {
-		argv[i] = reflect.ValueOf(v[i])
+	for i := 0; i < len(a); i++ {
+		args[i] = reflect.ValueOf(a[i])
 	}
 
-	fn.Call(argv)
+	fn.Call(args)
 }
