@@ -24,10 +24,12 @@ type Testing interface {
 
 var tt Testing = &testing.T{}
 
-type (
-	StepFunc  interface{}
-	SetupFunc func(*Feature) func()
-)
+// StepFunc must implement a func(Testing) func(...) pattern
+type StepFunc interface{}
+
+// SetupFunc is a func that would be run before steps to setup the steps,
+// return a teardown fun if applicable
+type SetupFunc func(*Feature) func()
 
 type Steps map[string]StepFunc
 
@@ -201,6 +203,9 @@ func (f Feature) C(di []string, fn interface{}) {
 	v.Call(args)
 }
 
+// Setup executes a collection of SetupFuncs and returns a func to teardown any
+// SetupFuncs that returned a teardown func. Teardown is done in the same order
+// as the setup.
 func (f *Feature) Setup(fn ...SetupFunc) func() {
 	var tds []func()
 
