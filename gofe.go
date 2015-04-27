@@ -73,11 +73,14 @@ func checkStep(fn StepFunc) error {
 	f := reflect.TypeOf(&Feature{})
 	for i := 0; i < p.NumIn(); i++ {
 		a := p.In(i)
-		if a == f && i != 0 {
-			return fmt.Errorf("*Feature must be the first argument")
-		}
-		if i == 0 && a == reflect.TypeOf(Feature{}) {
-			return fmt.Errorf("Feature must be a pointer")
+		if i == 0 {
+			if a == reflect.TypeOf(Feature{}) {
+				return fmt.Errorf("Feature must be a pointer")
+			}
+		} else {
+			if a == f {
+				return fmt.Errorf("*Feature must be the first argument")
+			}
 		}
 	}
 
