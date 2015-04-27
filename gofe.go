@@ -130,16 +130,14 @@ func (c Context) Get(k string) (interface{}, bool) {
 }
 
 type Feature struct {
-	t Testing
-
+	T       Testing
 	Steps   []Steps
 	Context Context
 }
 
 func New(t Testing, s ...Steps) *Feature {
 	return &Feature{
-		t: t,
-
+		T:       t,
 		Steps:   s,
 		Context: make(map[string]interface{}),
 	}
@@ -189,7 +187,7 @@ func (f Feature) C(di []string, fn interface{}) {
 
 		v, err := f.getc(v.Type().In(i), k)
 		if err != nil {
-			f.t.Fatalf("%s", err)
+			f.T.Fatalf("%s", err)
 
 			return // testing package will exit, this is for tests
 		}
@@ -220,7 +218,7 @@ func (f Feature) stepfn(name string) (reflect.Value, []reflect.Value, error) {
 
 	// call func(Testing) func(...)
 	fn = reflect.ValueOf(stepFunc).Call([]reflect.Value{
-		reflect.ValueOf(f.t),
+		reflect.ValueOf(f.T),
 	})[0]
 	args := f.makeArgs(fn.Type())
 
@@ -247,7 +245,7 @@ func (f *Feature) makeArgs(t reflect.Type) []reflect.Value {
 func (f Feature) Step(name string, a ...interface{}) {
 	fn, args, err := f.stepfn(name)
 	if err != nil {
-		f.t.Fatal(err)
+		f.T.Fatal(err)
 
 		return // actual testing package will exit, just for testing
 	}
