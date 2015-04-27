@@ -140,21 +140,28 @@ func (f Feature) stepfn(name string) (reflect.Value, []reflect.Value, error) {
 	}
 
 	// call func(Testing) func(...)
-	v := reflect.ValueOf(stepFunc).Call([]reflect.Value{
+	fn = reflect.ValueOf(stepFunc).Call([]reflect.Value{
 		reflect.ValueOf(f.t),
-	})
-	fn = v[0]
-	t := fn.Type()
-	a := make([]reflect.Value, 0, t.NumIn())
+	})[0]
+	args := f.allocArgs(fn.Type())
 
-	if t.NumIn() > 0 {
-		c := t.In(0)
-		if c.Kind() == reflect.TypeOf(Context{}).Kind() {
-			a = append(a, reflect.ValueOf(f.context))
-		}
+	return fn, args, nil
+}
+
+func (f Feature) allocArgs(t reflect.Type) []reflect.Value {
+	n := t.NumIn()
+	if n == 0 {
+		return nil
 	}
 
-	return fn, a, nil
+	a := make([]reflect.Value, 0, n)
+
+	if t.In(0).Kind() == reflect.TypeOf(Context{}).Kind() {
+		a = a[:1]
+		a[0] = reflect.ValueOf(f.context)
+	}
+
+	return a
 }
 
 func (f Feature) Step(name string, a ...interface{}) {
@@ -165,8 +172,8 @@ func (f Feature) Step(name string, a ...interface{}) {
 		return // actual testing package will exit, just for testing
 	}
 
-	pre := len(args) // number of args that comes predefined from stepfn
-	for i := 0; i < cap(args)-pre; i++ {
+	n := cap(args) - len(args) // number of args that comes predefined from stepfn
+	for i := 0; i < n; i++ {
 		args = append(args, reflect.ValueOf(a[i]))
 	}
 
