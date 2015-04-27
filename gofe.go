@@ -38,12 +38,13 @@ func checkFuncTesting(t reflect.Type) bool {
 	}
 
 	a := t.In(0)
+	b := reflect.TypeOf(tt)
 
 	if a.Kind() == reflect.Interface {
-		return reflect.TypeOf(tt).Implements(a)
+		return b.Implements(a)
 	}
 
-	return a == reflect.TypeOf(tt)
+	return a == b
 }
 
 func checkFuncTestingReturnsFunc(t reflect.Type) (reflect.Type, bool) {
