@@ -58,14 +58,15 @@ func checkStep(fn StepFunc) error {
 		return errMustReturnFunc
 	}
 
-	// check for context
-	c := reflect.ValueOf(Context{})
+	// check for *Feature argument
+	f := reflect.TypeOf(&Feature{})
 	for i := 0; i < p.NumIn(); i++ {
 		a := p.In(i)
-		if a.Kind() == c.Kind() {
-			if i != 0 {
-				return fmt.Errorf("context must be the first argument")
-			}
+		if a == f && i != 0 {
+			return fmt.Errorf("*Feature must be the first argument")
+		}
+		if i == 0 && a == reflect.TypeOf(Feature{}) {
+			return fmt.Errorf("Feature must be a pointer")
 		}
 	}
 
@@ -148,7 +149,7 @@ func (f Feature) stepfn(name string) (reflect.Value, []reflect.Value, error) {
 	return fn, args, nil
 }
 
-func (f Feature) makeArgs(t reflect.Type) []reflect.Value {
+func (f *Feature) makeArgs(t reflect.Type) []reflect.Value {
 	n := t.NumIn()
 	if n == 0 {
 		return nil
@@ -156,9 +157,10 @@ func (f Feature) makeArgs(t reflect.Type) []reflect.Value {
 
 	a := make([]reflect.Value, 0, n)
 
-	if t.In(0).Kind() == reflect.TypeOf(Context{}).Kind() {
+	// if first arg *Feature, inject it
+	if t.In(0) == reflect.TypeOf(f) {
 		a = a[:1]
-		a[0] = reflect.ValueOf(f.Context)
+		a[0] = reflect.ValueOf(f)
 	}
 
 	return a
