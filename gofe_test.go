@@ -8,8 +8,11 @@ import (
 )
 
 type tTesting struct {
+	Testing
+
 	errorfs []string
 	fatals  []string
+	logfs   []string
 }
 
 func (t *tTesting) Errorf(f string, v ...interface{}) {
@@ -18,6 +21,10 @@ func (t *tTesting) Errorf(f string, v ...interface{}) {
 
 func (t *tTesting) Fatal(v ...interface{}) {
 	t.fatals = append(t.fatals, fmt.Sprint(v...))
+}
+
+func (t *tTesting) Logf(f string, v ...interface{}) {
+	t.logfs = append(t.logfs, fmt.Sprintf(f, v...))
 }
 
 func TestStepsBasicTypes(t *testing.T) {
@@ -208,19 +215,19 @@ func TestCallAStepWithinAStep(t *testing.T) {
 	s := NewSteps()
 	s.Add("inner", func(t Testing) func(string) {
 		return func(a string) {
-			t.Errorf("inner %s", a)
+			t.Logf("inner %s", a)
 		}
 	})
 	s.Add("outer", func(t Testing) func(*Feature, string, string) {
 		return func(f *Feature, a, b string) {
 			f.Step("inner", a)
-			t.Errorf("outer %s, %s", a, b)
+			t.Logf("outer %s, %s", a, b)
 		}
 	})
 
 	fe := New(tT, s)
 	fe.Step("outer", "one", "two")
 
-	assert.Equal(t, "inner one", tT.errorfs[0])
-	assert.Equal(t, "outer one, two", tT.errorfs[1])
+	assert.Equal(t, "inner one", tT.logfs[0])
+	assert.Equal(t, "outer one, two", tT.logfs[1])
 }
