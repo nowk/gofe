@@ -136,6 +136,57 @@ func (f *Feature) SetContext(c map[string]interface{}) {
 	f.Context = c
 }
 
+func (f Feature) getc(t reflect.Type, key string) (reflect.Value, error) {
+	var v, null reflect.Value
+
+	for k, c := range f.Context {
+		vo := reflect.ValueOf(c)
+		if vo.Type() == t {
+			v = vo
+
+			// if key == "" it's assumed the di value was nil and returning upon a
+			// matched type is enough
+			if k == key || key == "" {
+				return v, nil
+			}
+		}
+	}
+	// no matched type was found
+	if reflect.DeepEqual(v, null) {
+		return v, fmt.Errorf("%s: invalid context injection type", t.Name())
+	}
+
+	return v, fmt.Errorf("%s: invalid context injection key", key)
+}
+
+// C expands the Context objects to fn as type asserted agruments of fn. To
+// handle similar types, C employees an angular style Direct Injection array to
+// help attempt to match the order of the arguments.
+func (f Feature) C(di []string, fn interface{}) {
+	v := reflect.ValueOf(fn)
+	n := v.Type().NumIn()
+
+	args := make([]reflect.Value, n)
+
+	for i := 0; i < n; i++ {
+		var k string
+		if len(di) > 0 {
+			k = di[i]
+		}
+
+		v, err := f.getc(v.Type().In(i), k)
+		if err != nil {
+			f.t.Fatalf("%s", err)
+
+			return // testing package will exit, this is for tests
+		}
+
+		args[i] = v
+	}
+
+	v.Call(args)
+}
+
 func (f Feature) findStep(name string) (StepFunc, error) {
 	for _, v := range f.Steps {
 		if f, ok := v[name]; ok {

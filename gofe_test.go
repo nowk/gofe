@@ -12,6 +12,7 @@ type tTesting struct {
 
 	errorfs []string
 	fatals  []string
+	fatalfs []string
 	logfs   []string
 }
 
@@ -21,6 +22,10 @@ func (t *tTesting) Errorf(f string, v ...interface{}) {
 
 func (t *tTesting) Fatal(v ...interface{}) {
 	t.fatals = append(t.fatals, fmt.Sprint(v...))
+}
+
+func (t *tTesting) Fatalf(f string, v ...interface{}) {
+	t.fatalfs = append(t.fatalfs, fmt.Sprintf(f, v...))
 }
 
 func (t *tTesting) Logf(f string, v ...interface{}) {
@@ -230,4 +235,117 @@ func TestCallAStepWithinAStep(t *testing.T) {
 
 	assert.Equal(t, "inner one", tT.logfs[0])
 	assert.Equal(t, "outer one, two", tT.logfs[1])
+}
+
+func TestCExpandsContextToFuncArgsUsingDiForOrder(t *testing.T) {
+	tT := &tTesting{}
+
+	type User struct {
+		Name string
+	}
+
+	s := NewSteps()
+	s.Add("a step", func(t Testing) func(*Feature) {
+		return func(f *Feature) {
+			f.C([]string{"a", "b", "u"}, func(a, b string, u *User) {
+				t.Logf("a: %s, b: %s, u: %s", a, b, u.Name)
+			})
+		}
+	})
+
+	fe := New(tT, s)
+	fe.SetContext(map[string]interface{}{
+		"b": "b",
+		"u": &User{"Batman"},
+		"a": "a",
+	})
+	fe.Step("a step")
+
+	assert.Equal(t, "a: a, b: b, u: Batman", tT.logfs[0])
+}
+
+func TestCArgTypesMustMatchMatchedContextType(t *testing.T) {
+	tT := &tTesting{}
+
+	type User struct {
+		Name string
+	}
+
+	s := NewSteps()
+	s.Add("a step", func(t Testing) func(*Feature) {
+		return func(f *Feature) {
+			f.C([]string{"u"}, func(u User) {
+				//
+			})
+		}
+	})
+	s.Add("another step", func(t Testing) func(*Feature) {
+		return func(f *Feature) {
+			f.C(nil, func(u User) {
+				//
+			})
+		}
+	})
+
+	fe := New(tT, s)
+	fe.SetContext(map[string]interface{}{
+		"u": &User{"Batman"},
+	})
+	fe.Step("a step")
+	fe.Step("another step")
+
+	assert.Equal(t, "User: invalid context injection type", tT.fatalfs[0])
+	assert.Equal(t, "User: invalid context injection type", tT.fatalfs[1])
+}
+
+func TestCArgDiMustHaveAMatchingKey(t *testing.T) {
+	tT := &tTesting{}
+
+	type User struct {
+		Name string
+	}
+
+	s := NewSteps()
+	s.Add("a step", func(t Testing) func(*Feature) {
+		return func(f *Feature) {
+			f.C([]string{"User"}, func(u *User) {
+				//
+			})
+		}
+	})
+
+	fe := New(tT, s)
+	fe.SetContext(map[string]interface{}{
+		"u": &User{"Batman"},
+	})
+	fe.Step("a step")
+
+	assert.Equal(t, "User: invalid context injection key", tT.fatalfs[0])
+}
+
+func TestCExpandsOnTypeIfDiIsNil(t *testing.T) {
+	tT := &tTesting{}
+
+	type User struct {
+		Name string
+	}
+
+	s := NewSteps()
+	s.Add("a step", func(t Testing) func(*Feature) {
+		return func(f *Feature) {
+			f.C(nil, func(a string, u *User, n int) {
+				t.Logf("a: %s, u: %s, n: %d", a, u.Name, n)
+			})
+		}
+	})
+
+	fe := New(tT, s)
+	fe.SetContext(map[string]interface{}{
+		"n": 9,
+		"u": &User{"Batman"},
+		"a": "a",
+	})
+	fe.Step("a step")
+
+	assert.Equal(t, "a: a, u: Batman, n: 9", tT.logfs[0])
 }
