@@ -361,3 +361,38 @@ func TestCExpandsOnTypeIfDiIsNil(t *testing.T) {
 
 	assert.Equal(t, "a: a, u: Batman, n: 9", tT.logfs[0])
 }
+
+func TestSetupAllowsSetupAndTeardown(t *testing.T) {
+	tT := &tTesting{}
+
+	s := NewSteps()
+	s.Add("a step", func(t Testing) func(*Feature) {
+		return func(f *Feature) {
+			f.C(nil, func(a string, n int) {
+				t.Logf("a: %s, n: %d", a, n)
+			})
+		}
+	})
+
+	fe := New(tT, s)
+	td := fe.Setup(func(f *Feature) func() {
+		f.Context["a"] = "a"
+		f.Context["n"] = 9
+
+		f.T.Logf("You got mail")
+
+		return nil
+	}, func(f *Feature) func() {
+		return func() {
+			f.T.Logf("Goodbye!")
+		}
+	})
+
+	fe.Step("a step")
+
+	td()
+
+	assert.Equal(t, "You got mail", tT.logfs[0])
+	assert.Equal(t, "a: a, n: 9", tT.logfs[1])
+	assert.Equal(t, "Goodbye!", tT.logfs[2])
+}

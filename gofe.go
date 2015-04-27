@@ -24,7 +24,10 @@ type Testing interface {
 
 var tt Testing = &testing.T{}
 
-type StepFunc interface{}
+type (
+	StepFunc  interface{}
+	SetupFunc func(*Feature) func()
+)
 
 type Steps map[string]StepFunc
 
@@ -196,6 +199,23 @@ func (f Feature) C(di []string, fn interface{}) {
 	}
 
 	v.Call(args)
+}
+
+func (f *Feature) Setup(fn ...SetupFunc) func() {
+	var tds []func()
+
+	for _, v := range fn {
+		td := v(f)
+		if td != nil {
+			tds = append(tds, td)
+		}
+	}
+
+	return func() {
+		for _, v := range tds {
+			v()
+		}
+	}
 }
 
 func (f Feature) findStep(name string) (StepFunc, error) {
