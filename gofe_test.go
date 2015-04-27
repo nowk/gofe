@@ -201,3 +201,26 @@ func TestFeatureMustBeAPointer(t *testing.T) {
 		})
 	})
 }
+
+func TestCallAStepWithinAStep(t *testing.T) {
+	tT := &tTesting{}
+
+	s := NewSteps()
+	s.Add("inner", func(t Testing) func(string) {
+		return func(a string) {
+			t.Errorf("inner %s", a)
+		}
+	})
+	s.Add("outer", func(t Testing) func(*Feature, string, string) {
+		return func(f *Feature, a, b string) {
+			f.Step("inner", a)
+			t.Errorf("outer %s, %s", a, b)
+		}
+	})
+
+	fe := New(tT, s)
+	fe.Step("outer", "one", "two")
+
+	assert.Equal(t, "inner one", tT.errorfs[0])
+	assert.Equal(t, "outer one, two", tT.errorfs[1])
+}
