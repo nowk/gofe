@@ -32,10 +32,29 @@ func NewSteps() Steps {
 	return make(map[string]StepFunc)
 }
 
-var (
-	errNotFuncTesting = fmt.Errorf("steps must implement func(Testing) func(...)")
-	errMustReturnFunc = fmt.Errorf("steps must return a single func")
-)
+func checkFuncTesting(t reflect.Type) bool {
+	if t.NumIn() != 1 {
+		return false
+	}
+
+	a := t.In(0)
+
+	if a.Kind() == reflect.Interface {
+		return reflect.TypeOf(tt).Implements(a)
+	}
+
+	return a == reflect.TypeOf(tt)
+}
+
+func checkFuncTestingReturnsFunc(t reflect.Type) (reflect.Type, bool) {
+	if t.NumOut() != 1 {
+		return nil, false
+	}
+
+	p := t.Out(0)
+
+	return p, p.Kind() == reflect.Func
+}
 
 // checkStep checks to make sure the StepFunc given for any step meets the
 // required implmenetation of func(Testing) func(...)
@@ -50,26 +69,14 @@ var (
 //
 func checkStep(fn StepFunc) error {
 	t := reflect.TypeOf(fn)
-	if t.NumIn() != 1 {
-		return errNotFuncTesting
-	}
-	a := t.In(0)
-	if a.Kind() == reflect.Interface {
-		if !reflect.TypeOf(tt).Implements(a) {
-			return errNotFuncTesting
-		}
-	} else {
-		if a != reflect.TypeOf(tt) {
-			return errNotFuncTesting
-		}
+
+	if ok := checkFuncTesting(t); !ok {
+		return fmt.Errorf("steps must implement func(Testing) func(...)")
 	}
 
-	if t.NumOut() != 1 {
-		return errMustReturnFunc
-	}
-	p := t.Out(0)
-	if p.Kind() != reflect.Func {
-		return errMustReturnFunc
+	p, ok := checkFuncTestingReturnsFunc(t)
+	if !ok {
+		return fmt.Errorf("steps must return a single func")
 	}
 
 	// check for *Feature argument
@@ -80,10 +87,12 @@ func checkStep(fn StepFunc) error {
 			if a == reflect.TypeOf(Feature{}) {
 				return fmt.Errorf("Feature must be a pointer")
 			}
-		} else {
-			if a == f {
-				return fmt.Errorf("*Feature must be the first argument")
-			}
+
+			continue
+		}
+
+		if a == f {
+			return fmt.Errorf("*Feature must be the first argument")
 		}
 	}
 
