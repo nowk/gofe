@@ -260,16 +260,43 @@ func (f Feature) Step(name string, a ...interface{}) {
 	fn.Call(args)
 }
 
+func (f Feature) Given(name string, a ...interface{}) {
+	f.Step(name, a...)
+}
+
+func (f Feature) When(name string, a ...interface{}) {
+	f.Step(name, a...)
+}
+
+func (f Feature) Then(name string, a ...interface{}) {
+	f.Step(name, a...)
+}
+
 func (f Feature) And(name string, a ...interface{}) {
 	f.Step(name, a...)
 }
 
-// And_ is a short to Step. The appended _ underscore is there for alignment
-// with Step.
-//
-//		fe.Step(...)
-//		fe.And_(...)
-//
+/*
+_ prefixed shortcuts for alignment
+
+		fe.Given(...)
+		fe.And__(...)
+		fe.When_(...)
+		fe.Then_(...)
+
+*/
+
+func (f Feature) When_(name string, a ...interface{}) {
+	f.Step(name, a...)
+}
+
+func (f Feature) Then_(name string, a ...interface{}) {
+	f.Step(name, a...)
+}
+
 func (f Feature) And_(name string, a ...interface{}) {
+	f.Step(name, a...)
+}
+func (f Feature) And__(name string, a ...interface{}) {
 	f.Step(name, a...)
 }
