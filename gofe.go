@@ -54,11 +54,14 @@ func checkStep(fn StepFunc) error {
 		return errNotFuncTesting
 	}
 	a := t.In(0)
-	if a.Kind() != reflect.Interface {
-		return errNotFuncTesting
-	}
-	if !reflect.TypeOf(tt).Implements(a) {
-		return errNotFuncTesting
+	if a.Kind() == reflect.Interface {
+		if !reflect.TypeOf(tt).Implements(a) {
+			return errNotFuncTesting
+		}
+	} else {
+		if a != reflect.TypeOf(tt) {
+			return errNotFuncTesting
+		}
 	}
 
 	if t.NumOut() != 1 {

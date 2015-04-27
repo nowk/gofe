@@ -102,12 +102,6 @@ func TestStepsIsFuncWithTestingArg(t *testing.T) {
 		})
 	})
 
-	assert.Panic(t, str, func() {
-		s.Add("a step", func(t *testing.T) {
-			//
-		})
-	})
-
 	type NotATestingInterface interface {
 		Foo()
 	}
@@ -117,6 +111,24 @@ func TestStepsIsFuncWithTestingArg(t *testing.T) {
 			//
 		})
 	})
+}
+
+func TestStepsFuncCanBeTestingItselfInsteadOfInterfaceImpl(t *testing.T) {
+	ok := false
+
+	s := NewSteps()
+	s.Add("a step", func(t *testing.T) func() {
+		return func() {
+			ok = true
+
+			assert.TypeOf(t, "*testing.T", t)
+		}
+	})
+
+	fe := New(t, s)
+	fe.Step("a step")
+
+	assert.True(t, ok)
 }
 
 func TestStepsIsFuncThatReturnsFunc(t *testing.T) {
