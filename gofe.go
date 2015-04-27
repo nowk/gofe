@@ -143,12 +143,12 @@ func (f Feature) stepfn(name string) (reflect.Value, []reflect.Value, error) {
 	fn = reflect.ValueOf(stepFunc).Call([]reflect.Value{
 		reflect.ValueOf(f.t),
 	})[0]
-	args := f.allocArgs(fn.Type())
+	args := f.makeArgs(fn.Type())
 
 	return fn, args, nil
 }
 
-func (f Feature) allocArgs(t reflect.Type) []reflect.Value {
+func (f Feature) makeArgs(t reflect.Type) []reflect.Value {
 	n := t.NumIn()
 	if n == 0 {
 		return nil
