@@ -102,23 +102,23 @@ func (c Context) Get(k string) (interface{}, bool) {
 }
 
 type Feature struct {
-	t     Testing
-	Steps []Steps
+	t Testing
 
-	context Context
+	Steps   []Steps
+	Context Context
 }
 
 func New(t Testing, s ...Steps) *Feature {
 	return &Feature{
-		t:     t,
-		Steps: s,
+		t: t,
 
-		context: make(map[string]interface{}),
+		Steps:   s,
+		Context: make(map[string]interface{}),
 	}
 }
 
-func (f *Feature) Context(c map[string]interface{}) {
-	f.context = c
+func (f *Feature) SetContext(c map[string]interface{}) {
+	f.Context = c
 }
 
 func (f Feature) findStep(name string) (StepFunc, error) {
@@ -158,7 +158,7 @@ func (f Feature) allocArgs(t reflect.Type) []reflect.Value {
 
 	if t.In(0).Kind() == reflect.TypeOf(Context{}).Kind() {
 		a = a[:1]
-		a[0] = reflect.ValueOf(f.context)
+		a[0] = reflect.ValueOf(f.Context)
 	}
 
 	return a

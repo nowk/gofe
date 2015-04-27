@@ -170,7 +170,7 @@ func TestContextIsPassedAsFirstArgumentIfDefined(t *testing.T) {
 	})
 
 	fe := New(tT, s)
-	fe.Context(map[string]interface{}{
+	fe.SetContext(map[string]interface{}{
 		"first_name": "Bruce",
 	})
 	fe.Step("Batman's first name is ...")
