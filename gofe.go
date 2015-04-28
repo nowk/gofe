@@ -276,37 +276,36 @@ func (f *Feature) call(name string, s StepFunc, a ...interface{}) {
 }
 
 // Stepf calls a given StepFunc directly
-func (f Feature) Stepf(s StepFunc, a ...interface{}) {
-	err := checkStep(s)
+func (f Feature) Stepf(fn StepFunc, a ...interface{}) {
+	err := checkStep(fn)
 	if err != nil {
 		f.T.Fatal(err)
 
 		return
 	}
 
-	f.call("", s, a...)
-}
-
-func findStep(name string, steps []Steps) StepFunc {
-	for _, v := range steps {
-		if f, ok := v[name]; ok {
-			return f
-		}
-	}
-
-	return nil
+	f.call("", fn, a...)
 }
 
 // Step looks up a step by name and calls it
 func (f Feature) Step(name string, a ...interface{}) {
-	s := findStep(name, f.Steps)
-	if s == nil {
+	var fn StepFunc
+
+	for _, v := range f.Steps {
+		if f, ok := v[name]; ok {
+			fn = f
+
+			break
+		}
+	}
+
+	if fn == nil {
 		f.T.Fatalf("`%s`: step not found", name)
 
 		return // actual testing package will exit, just for testing
 	}
 
-	f.call(name, s, a...)
+	f.call(name, fn, a...)
 }
 
 /*
