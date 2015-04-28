@@ -396,3 +396,23 @@ func TestSetupAllowsSetupAndTeardown(t *testing.T) {
 	assert.Equal(t, "a: a, n: 9", tT.logfs[1])
 	assert.Equal(t, "Goodbye!", tT.logfs[2])
 }
+
+func TestStepfExecutesAStepFuncDirectly(t *testing.T) {
+	tT := &tTesting{}
+
+	aStep := func(t Testing) func(*Feature, int) {
+		return func(f *Feature, n int) {
+			f.C(nil, func(a string) {
+				t.Logf("a: %s, n: %d", a, n)
+			})
+		}
+	}
+
+	fe := New(tT)
+	fe.SetContext(map[string]interface{}{
+		"a": "a",
+	})
+	fe.Stepf(aStep, 9)
+
+	assert.Equal(t, "a: a, n: 9", tT.logfs[0])
+}

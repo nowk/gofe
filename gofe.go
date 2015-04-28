@@ -223,26 +223,8 @@ func (f *Feature) Setup(fn ...SetupFunc) func() {
 	}
 }
 
-func (f Feature) findStep(name string) (StepFunc, error) {
-	for _, v := range f.Steps {
-		if f, ok := v[name]; ok {
-			return f, nil
-		}
-	}
-
-	return nil, fmt.Errorf("`%s`: step not found", name)
-}
-
-func (f Feature) stepfn(name string) (reflect.Value, []reflect.Value, error) {
-	var fn reflect.Value
-
-	stepFunc, err := f.findStep(name)
-	if err != nil {
-		return fn, nil, err
-	}
-
-	// call func(Testing) func(...)
-	fn = reflect.ValueOf(stepFunc).Call([]reflect.Value{
+func (f Feature) stepFunc(s StepFunc) (reflect.Value, []reflect.Value, error) {
+	fn := reflect.ValueOf(s).Call([]reflect.Value{
 		reflect.ValueOf(f.T),
 	})[0]
 	args := f.makeArgs(fn.Type())
@@ -267,12 +249,12 @@ func (f *Feature) makeArgs(t reflect.Type) []reflect.Value {
 	return a
 }
 
-func (f Feature) Step(name string, a ...interface{}) {
-	fn, args, err := f.stepfn(name)
+func (f Feature) call(s StepFunc, a ...interface{}) {
+	fn, args, err := f.stepFunc(s)
 	if err != nil {
 		f.T.Fatal(err)
 
-		return // actual testing package will exit, just for testing
+		return
 	}
 
 	n := cap(args) - len(args) // number of args that comes predefined from stepfn
@@ -281,6 +263,38 @@ func (f Feature) Step(name string, a ...interface{}) {
 	}
 
 	fn.Call(args)
+}
+
+func (f Feature) Stepf(s StepFunc, a ...interface{}) {
+	err := checkStep(s)
+	if err != nil {
+		f.T.Fatal(err)
+
+		return
+	}
+
+	f.call(s, a...)
+}
+
+func (f Feature) findStep(name string) (StepFunc, error) {
+	for _, v := range f.Steps {
+		if f, ok := v[name]; ok {
+			return f, nil
+		}
+	}
+
+	return nil, fmt.Errorf("`%s`: step not found", name)
+}
+
+func (f Feature) Step(name string, a ...interface{}) {
+	s, err := f.findStep(name)
+	if err != nil {
+		f.T.Fatal(err)
+
+		return // actual testing package will exit, just for testing
+	}
+
+	f.call(s, a...)
 }
 
 func (f Feature) Given(name string, a ...interface{}) {
