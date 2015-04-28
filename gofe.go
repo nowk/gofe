@@ -227,12 +227,11 @@ func (f *Feature) Setup(fn ...SetupFunc) func() {
 
 // stepFunc calls func(Testing) func(...)
 func (f Feature) stepFunc(s StepFunc) (reflect.Value, []reflect.Value, error) {
-	fn := reflect.ValueOf(s).Call([]reflect.Value{
+	t := []reflect.Value{
 		reflect.ValueOf(f.T),
-	})[0]
-	args := f.makeArgs(fn.Type())
-
-	return fn, args, nil
+	}
+	fn := reflect.ValueOf(s).Call(t)[0]
+	return fn, f.makeArgs(fn.Type()), nil
 }
 
 // makeArgs returns a cap set []reflect.Value to the number of args for the func
