@@ -152,6 +152,8 @@ func (f *Feature) SetContext(c map[string]interface{}) {
 	f.Context = c
 }
 
+// getc looks up a context by type and then by key returning it's reflected
+// value.
 func (f Feature) getc(t reflect.Type, key string) (reflect.Value, error) {
 	var v, null reflect.Value
 
@@ -175,7 +177,7 @@ func (f Feature) getc(t reflect.Type, key string) (reflect.Value, error) {
 	return v, fmt.Errorf("%s: invalid context injection key", key)
 }
 
-// C expands the Context objects to fn as type asserted agruments of fn. To
+// C expands the Context objects to fn as type asserted arguments of fn. To
 // handle similar types, C employees an angular style Direct Injection array to
 // help attempt to match the order of the arguments.
 func (f Feature) C(di []string, fn interface{}) {
@@ -223,6 +225,7 @@ func (f *Feature) Setup(fn ...SetupFunc) func() {
 	}
 }
 
+// stepFunc calls func(Testing) func(...)
 func (f Feature) stepFunc(s StepFunc) (reflect.Value, []reflect.Value, error) {
 	fn := reflect.ValueOf(s).Call([]reflect.Value{
 		reflect.ValueOf(f.T),
@@ -232,6 +235,8 @@ func (f Feature) stepFunc(s StepFunc) (reflect.Value, []reflect.Value, error) {
 	return fn, args, nil
 }
 
+// makeArgs returns a cap set []reflect.Value to the number of args for the func
+// returned by calling func(Testing).
 func (f *Feature) makeArgs(t reflect.Type) []reflect.Value {
 	n := t.NumIn()
 	if n == 0 {
@@ -249,6 +254,7 @@ func (f *Feature) makeArgs(t reflect.Type) []reflect.Value {
 	return a
 }
 
+// call relfects a StepFunc and calls it with any applicable arguments
 func (f Feature) call(s StepFunc, a ...interface{}) {
 	fn, args, err := f.stepFunc(s)
 	if err != nil {
@@ -265,6 +271,7 @@ func (f Feature) call(s StepFunc, a ...interface{}) {
 	fn.Call(args)
 }
 
+// Stepf calls a given StepFunc directly, with any addition arguments.
 func (f Feature) Stepf(s StepFunc, a ...interface{}) {
 	err := checkStep(s)
 	if err != nil {
@@ -286,6 +293,7 @@ func findStep(name string, steps []Steps) StepFunc {
 	return nil
 }
 
+// Step looks up a step by name and calls it given any additional arguments
 func (f Feature) Step(name string, a ...interface{}) {
 	s := findStep(name, f.Steps)
 	if s == nil {
@@ -296,6 +304,11 @@ func (f Feature) Step(name string, a ...interface{}) {
 
 	f.call(s, a...)
 }
+
+/*
+Cucumber style methods
+
+*/
 
 func (f Feature) Given(name string, a ...interface{}) {
 	f.Step(name, a...)
