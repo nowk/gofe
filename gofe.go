@@ -276,20 +276,20 @@ func (f Feature) Stepf(s StepFunc, a ...interface{}) {
 	f.call(s, a...)
 }
 
-func (f Feature) findStep(name string) (StepFunc, error) {
-	for _, v := range f.Steps {
+func findStep(name string, steps []Steps) StepFunc {
+	for _, v := range steps {
 		if f, ok := v[name]; ok {
-			return f, nil
+			return f
 		}
 	}
 
-	return nil, fmt.Errorf("`%s`: step not found", name)
+	return nil
 }
 
 func (f Feature) Step(name string, a ...interface{}) {
-	s, err := f.findStep(name)
-	if err != nil {
-		f.T.Fatal(err)
+	s := findStep(name, f.Steps)
+	if s == nil {
+		f.T.Fatalf("`%s`: step not found", name)
 
 		return // actual testing package will exit, just for testing
 	}

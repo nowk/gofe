@@ -173,7 +173,7 @@ func TestStepNotFound(t *testing.T) {
 	fe := New(tT, NewSteps())
 	fe.Step("some step")
 
-	assert.Equal(t, "`some step`: step not found", tT.fatals[0])
+	assert.Equal(t, "`some step`: step not found", tT.fatalfs[0])
 }
 
 func TestFeatureIsPassedAsFirstArgumentIfDefined(t *testing.T) {
