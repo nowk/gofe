@@ -255,8 +255,7 @@ func (s Step) Name() string {
 // call relfects a StepFunc and calls it with any applicable arguments
 func (f *Feature) call(name string, s StepFunc, a ...interface{}) {
 	fn, args := f.stepFunc(s)
-
-	if cap(args) > 0 {
+	if args != nil {
 		// if first arg *Step, inject it
 		if fn.Type().In(0) == reflect.TypeOf(&Step{}) {
 			args = args[:1]
