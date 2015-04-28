@@ -86,19 +86,19 @@ func checkStep(fn StepFunc) error {
 	}
 
 	// check for *Feature argument
-	f := reflect.TypeOf(&Feature{})
+	s := reflect.TypeOf(&Step{})
 	for i := 0; i < p.NumIn(); i++ {
 		a := p.In(i)
 		if i == 0 {
-			if a == reflect.TypeOf(Feature{}) {
-				return fmt.Errorf("Feature must be a pointer")
+			if a == reflect.TypeOf(Step{}) {
+				return fmt.Errorf("Step must be a pointer")
 			}
 
 			continue
 		}
 
-		if a == f {
-			return fmt.Errorf("*Feature must be the first argument")
+		if a == s {
+			return fmt.Errorf("*Step must be the first argument")
 		}
 	}
 
@@ -226,45 +226,51 @@ func (f *Feature) Setup(fn ...SetupFunc) func() {
 }
 
 // stepFunc calls func(Testing) func(...)
-func (f Feature) stepFunc(s StepFunc) (reflect.Value, []reflect.Value, error) {
+func (f Feature) stepFunc(s StepFunc) (reflect.Value, []reflect.Value) {
 	t := []reflect.Value{
 		reflect.ValueOf(f.T),
 	}
 	fn := reflect.ValueOf(s).Call(t)[0]
-	return fn, f.makeArgs(fn.Type()), nil
+
+	n := fn.Type().NumIn()
+	if n == 0 {
+		return fn, nil
+	}
+	args := make([]reflect.Value, 0, n)
+
+	return fn, args
 }
 
-// makeArgs returns a cap set []reflect.Value to the number of args for the func
-// returned by calling func(Testing).
-func (f *Feature) makeArgs(t reflect.Type) []reflect.Value {
-	n := t.NumIn()
-	if n == 0 {
-		return nil
-	}
+// Step wraps feature and provides access to the step's name
+type Step struct {
+	*Feature
 
-	a := make([]reflect.Value, 0, n)
+	name string
+}
 
-	// if first arg *Feature, inject it
-	if t.In(0) == reflect.TypeOf(f) {
-		a = a[:1]
-		a[0] = reflect.ValueOf(f)
-	}
-
-	return a
+func (s Step) Name() string {
+	return s.name
 }
 
 // call relfects a StepFunc and calls it with any applicable arguments
-func (f Feature) call(s StepFunc, a ...interface{}) {
-	fn, args, err := f.stepFunc(s)
-	if err != nil {
-		f.T.Fatal(err)
+func (f *Feature) call(name string, s StepFunc, a ...interface{}) {
+	fn, args := f.stepFunc(s)
 
-		return
-	}
+	if cap(args) > 0 {
+		// if first arg *Step, inject it
+		if fn.Type().In(0) == reflect.TypeOf(&Step{}) {
+			args = args[:1]
+			args[0] = reflect.ValueOf(&Step{
+				Feature: f,
 
-	n := cap(args) - len(args) // number of args that comes predefined from stepfn
-	for i := 0; i < n; i++ {
-		args = append(args, reflect.ValueOf(a[i]))
+				name: name,
+			})
+		}
+
+		n := cap(args) - len(args) // number of args that comes predefined from stepfn
+		for i := 0; i < n; i++ {
+			args = append(args, reflect.ValueOf(a[i]))
+		}
 	}
 
 	fn.Call(args)
@@ -279,7 +285,7 @@ func (f Feature) Stepf(s StepFunc, a ...interface{}) {
 		return
 	}
 
-	f.call(s, a...)
+	f.call("", s, a...)
 }
 
 func findStep(name string, steps []Steps) StepFunc {
@@ -301,7 +307,7 @@ func (f Feature) Step(name string, a ...interface{}) {
 		return // actual testing package will exit, just for testing
 	}
 
-	f.call(s, a...)
+	f.call(name, s, a...)
 }
 
 /*

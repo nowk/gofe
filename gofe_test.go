@@ -180,15 +180,15 @@ func TestFeatureIsPassedAsFirstArgumentIfDefined(t *testing.T) {
 	tT := &tTesting{}
 
 	s := NewSteps()
-	s.Add("Batman's first name is ...", func(t Testing) func(*Feature) {
-		return func(f *Feature) {
-			v, _ := f.Context.Get("first_name")
+	s.Add("Batman's first name is ...", func(t Testing) func(*Step) {
+		return func(s *Step) {
+			v, _ := s.Context.Get("first_name")
 			t.Errorf("Batman's first name is %s", v.(string))
 		}
 	})
-	s.Add("Batman's full name is ...", func(t Testing) func(*Feature, string) {
-		return func(f *Feature, last string) {
-			v, _ := f.Context.Get("first_name")
+	s.Add("Batman's full name is ...", func(t Testing) func(*Step, string) {
+		return func(s *Step, last string) {
+			v, _ := s.Context.Get("first_name")
 			t.Errorf("Batman's full name is %s %s", v.(string), last)
 		}
 	})
@@ -206,9 +206,9 @@ func TestFeatureIsPassedAsFirstArgumentIfDefined(t *testing.T) {
 
 func TestFeatureCanOnlyBeTheFirstArg(t *testing.T) {
 	s := NewSteps()
-	assert.Panic(t, "*Feature must be the first argument", func() {
-		s.Add("a step", func(t Testing) func(string, *Feature) {
-			return func(a string, f *Feature) {
+	assert.Panic(t, "*Step must be the first argument", func() {
+		s.Add("a step", func(t Testing) func(string, *Step) {
+			return func(a string, s *Step) {
 				//
 			}
 		})
@@ -217,9 +217,9 @@ func TestFeatureCanOnlyBeTheFirstArg(t *testing.T) {
 
 func TestFeatureMustBeAPointer(t *testing.T) {
 	s := NewSteps()
-	assert.Panic(t, "Feature must be a pointer", func() {
-		s.Add("a step", func(t Testing) func(Feature) {
-			return func(f Feature) {
+	assert.Panic(t, "Step must be a pointer", func() {
+		s.Add("a step", func(t Testing) func(Step) {
+			return func(s Step) {
 				//
 			}
 		})
@@ -235,9 +235,9 @@ func TestCallAStepWithinAStep(t *testing.T) {
 			t.Logf("inner %s", a)
 		}
 	})
-	s.Add("outer", func(t Testing) func(*Feature, string, string) {
-		return func(f *Feature, a, b string) {
-			f.Step("inner", a)
+	s.Add("outer", func(t Testing) func(*Step, string, string) {
+		return func(s *Step, a, b string) {
+			s.Step("inner", a)
 			t.Logf("outer %s, %s", a, b)
 		}
 	})
@@ -257,9 +257,9 @@ func TestCExpandsContextToFuncArgsUsingDiForOrder(t *testing.T) {
 	}
 
 	s := NewSteps()
-	s.Add("a step", func(t Testing) func(*Feature) {
-		return func(f *Feature) {
-			f.C([]string{"a", "b", "u"}, func(a, b string, u *User) {
+	s.Add("a step", func(t Testing) func(*Step) {
+		return func(s *Step) {
+			s.C([]string{"a", "b", "u"}, func(a, b string, u *User) {
 				t.Logf("a: %s, b: %s, u: %s", a, b, u.Name)
 			})
 		}
@@ -284,16 +284,16 @@ func TestCArgTypesMustMatchMatchedContextType(t *testing.T) {
 	}
 
 	s := NewSteps()
-	s.Add("a step", func(t Testing) func(*Feature) {
-		return func(f *Feature) {
-			f.C([]string{"u"}, func(u User) {
+	s.Add("a step", func(t Testing) func(*Step) {
+		return func(s *Step) {
+			s.C([]string{"u"}, func(u User) {
 				//
 			})
 		}
 	})
-	s.Add("another step", func(t Testing) func(*Feature) {
-		return func(f *Feature) {
-			f.C(nil, func(u User) {
+	s.Add("another step", func(t Testing) func(*Step) {
+		return func(s *Step) {
+			s.C(nil, func(u User) {
 				//
 			})
 		}
@@ -318,9 +318,9 @@ func TestCArgDiMustHaveAMatchingKey(t *testing.T) {
 	}
 
 	s := NewSteps()
-	s.Add("a step", func(t Testing) func(*Feature) {
-		return func(f *Feature) {
-			f.C([]string{"User"}, func(u *User) {
+	s.Add("a step", func(t Testing) func(*Step) {
+		return func(s *Step) {
+			s.C([]string{"User"}, func(u *User) {
 				//
 			})
 		}
@@ -343,9 +343,9 @@ func TestCExpandsOnTypeIfDiIsNil(t *testing.T) {
 	}
 
 	s := NewSteps()
-	s.Add("a step", func(t Testing) func(*Feature) {
-		return func(f *Feature) {
-			f.C(nil, func(a string, u *User, n int) {
+	s.Add("a step", func(t Testing) func(*Step) {
+		return func(s *Step) {
+			s.C(nil, func(a string, u *User, n int) {
 				t.Logf("a: %s, u: %s, n: %d", a, u.Name, n)
 			})
 		}
@@ -366,9 +366,9 @@ func TestSetupAllowsSetupAndTeardown(t *testing.T) {
 	tT := &tTesting{}
 
 	s := NewSteps()
-	s.Add("a step", func(t Testing) func(*Feature) {
-		return func(f *Feature) {
-			f.C(nil, func(a string, n int) {
+	s.Add("a step", func(t Testing) func(*Step) {
+		return func(s *Step) {
+			s.C(nil, func(a string, n int) {
 				t.Logf("a: %s, n: %d", a, n)
 			})
 		}
@@ -400,9 +400,9 @@ func TestSetupAllowsSetupAndTeardown(t *testing.T) {
 func TestStepfExecutesAStepFuncDirectly(t *testing.T) {
 	tT := &tTesting{}
 
-	aStep := func(t Testing) func(*Feature, int) {
-		return func(f *Feature, n int) {
-			f.C(nil, func(a string) {
+	aStep := func(t Testing) func(*Step, int) {
+		return func(s *Step, n int) {
+			s.C(nil, func(a string) {
 				t.Logf("a: %s, n: %d", a, n)
 			})
 		}
@@ -415,4 +415,28 @@ func TestStepfExecutesAStepFuncDirectly(t *testing.T) {
 	fe.Stepf(aStep, 9)
 
 	assert.Equal(t, "a: a, n: 9", tT.logfs[0])
+}
+
+func TestStepProvidesAccessToTheStepsName(t *testing.T) {
+	tT := &tTesting{}
+
+	aStep := func(t Testing) func(*Step) {
+		return func(s *Step) {
+			t.Logf("step name: `%s`", s.Name())
+		}
+	}
+
+	s := NewSteps()
+	s.Add("a step", func(t Testing) func(*Step) {
+		return func(s *Step) {
+			t.Logf("step name: `%s`", s.Name())
+		}
+	})
+
+	fe := New(tT, s)
+	fe.Stepf(aStep)
+	fe.Step("a step")
+
+	assert.Equal(t, "step name: ``", tT.logfs[0])
+	assert.Equal(t, "step name: `a step`", tT.logfs[1])
 }
