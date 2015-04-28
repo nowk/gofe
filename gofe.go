@@ -27,8 +27,9 @@ var tt Testing = &testing.T{}
 // StepFunc must implement a func(Testing) func(...) pattern
 type StepFunc interface{}
 
-// SetupFunc is a func that would be run before steps to setup the steps,
-// return a teardown fun if applicable
+// SetupFunc represents a func to setup the Feature. Providing access to the
+// Feature itself to set contexts. The returning func is any teardown process
+// for the given func.
 type SetupFunc func(*Feature) func()
 
 type Steps map[string]StepFunc
@@ -85,7 +86,7 @@ func checkStep(fn StepFunc) error {
 		return fmt.Errorf("steps must return a single func")
 	}
 
-	// check for *Feature argument
+	// check for *Step argument
 	s := reflect.TypeOf(&Step{})
 	for i := 0; i < p.NumIn(); i++ {
 		a := p.In(i)
@@ -205,9 +206,8 @@ func (f Feature) C(di []string, fn interface{}) {
 	v.Call(args)
 }
 
-// Setup executes a collection of SetupFuncs and returns a func to teardown any
-// SetupFuncs that returned a teardown func. Teardown is done in the same order
-// as the setup.
+// Setup calls SetupFuncs and returns a teardown func with any teardown funcs
+// returned by the given SetupFuncs. Teardown order is FIFO.
 func (f *Feature) Setup(fn ...SetupFunc) func() {
 	var tds []func()
 
@@ -241,7 +241,7 @@ func (f Feature) stepFunc(s StepFunc) (reflect.Value, []reflect.Value) {
 	return fn, args
 }
 
-// Step wraps feature and provides access to the step's name
+// Step embeds Feature and provides access to the step's name
 type Step struct {
 	*Feature
 
@@ -252,7 +252,7 @@ func (s Step) Name() string {
 	return s.name
 }
 
-// call relfects a StepFunc and calls it with any applicable arguments
+// call relfects a StepFunc and calls it with any available arguments
 func (f *Feature) call(name string, s StepFunc, a ...interface{}) {
 	fn, args := f.stepFunc(s)
 	if args != nil {
@@ -275,7 +275,7 @@ func (f *Feature) call(name string, s StepFunc, a ...interface{}) {
 	fn.Call(args)
 }
 
-// Stepf calls a given StepFunc directly, with any addition arguments.
+// Stepf calls a given StepFunc directly
 func (f Feature) Stepf(s StepFunc, a ...interface{}) {
 	err := checkStep(s)
 	if err != nil {
@@ -297,7 +297,7 @@ func findStep(name string, steps []Steps) StepFunc {
 	return nil
 }
 
-// Step looks up a step by name and calls it given any additional arguments
+// Step looks up a step by name and calls it
 func (f Feature) Step(name string, a ...interface{}) {
 	s := findStep(name, f.Steps)
 	if s == nil {
