@@ -352,13 +352,12 @@ func (f Feature) Step(name string, a ...interface{}) {
 	for _, s := range f.Steps {
 		for _, v := range s {
 			m := v.reg.FindStringSubmatch(name)
-			if len(m) > 0 {
+			if n := len(m); n > 0 {
 				fn = v.fn
 
-				for i, v := range m {
-					if i > 0 {
-						args = append(args, &param{v})
-					}
+				// start at 1, we only want the submatches
+				for i := 1; i < n; i++ {
+					args = append(args, &param{m[i]})
 				}
 
 				break
