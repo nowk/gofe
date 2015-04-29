@@ -36,7 +36,7 @@ func TestStepsBasicTypes(t *testing.T) {
 	tT := new(tTesting)
 
 	s := NewSteps()
-	s.Add("a + b = 4", func(t Testing) func(int, int) {
+	s.Add("a \\+ b = 4", func(t Testing) func(int, int) {
 		return func(a, b int) {
 			if a+b != 4 {
 				t.Errorf("%d + %d != 4", a, b)
@@ -156,12 +156,12 @@ func TestStepsIsFuncThatReturnsFunc(t *testing.T) {
 
 func TestStepsHaveUniqueNames(t *testing.T) {
 	s := NewSteps()
-	s.Add("a + b = n", func(t Testing) func() {
+	s.Add("a \\+ b = n", func(t Testing) func() {
 		return func() {}
 	})
 
-	assert.Panic(t, "step `a + b = n` already exists", func() {
-		s.Add("a + b = n", func(t Testing) func() {
+	assert.Panic(t, "step `a \\+ b = n` already exists", func() {
+		s.Add("a \\+ b = n", func(t Testing) func() {
 			return func() {}
 		})
 	})
@@ -439,4 +439,32 @@ func TestStepProvidesAccessToTheStepsName(t *testing.T) {
 
 	assert.Equal(t, "step name: ``", tT.logfs[0])
 	assert.Equal(t, "step name: `a step`", tT.logfs[1])
+}
+
+func TestUseRegexToParseArgValues(t *testing.T) {
+	tT := &tTesting{}
+
+	s := NewSteps()
+	s.Add("^I login as (\\w+) (\\d) times", func(t Testing) func(string, int) {
+		return func(name string, n int) {
+			t.Logf("string: %s, int: %d", name, n)
+		}
+	})
+	s.Add("^It took less than (\\d+\\.\\d+) seconds",
+		func(t Testing) func(float64) {
+			return func(sec float64) {
+				t.Logf("float: %.2f", sec)
+			}
+		})
+
+	fe := New(tT, s)
+	fe.Step("I login as Batman 2 times")
+	fe.Step("It took less than 0.5 seconds")
+
+	for i, v := range []string{
+		"string: Batman, int: 2",
+		"float: 0.50",
+	} {
+		assert.Equal(t, v, tT.logfs[i], v)
+	}
 }

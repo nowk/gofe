@@ -3,6 +3,8 @@ package gofe
 import (
 	"fmt"
 	"reflect"
+	"regexp"
+	"strconv"
 	"testing"
 )
 
@@ -32,10 +34,16 @@ type StepFunc interface{}
 // for the given func.
 type SetupFunc func(*Feature) func()
 
-type Steps map[string]StepFunc
+type step struct {
+	name string
+	fn   StepFunc
+	reg  *regexp.Regexp
+}
+
+type Steps map[string]*step
 
 func NewSteps() Steps {
-	return make(map[string]StepFunc)
+	return make(Steps)
 }
 
 func checkFuncTesting(t reflect.Type) bool {
@@ -119,7 +127,11 @@ func (s Steps) Add(name string, fn StepFunc) interface{} {
 		panic(err)
 	}
 
-	s[name] = fn
+	s[name] = &step{
+		name: name,
+		fn:   fn,
+		reg:  regexp.MustCompile(name),
+	}
 
 	return nil
 }
@@ -252,12 +264,45 @@ func (s Step) Name() string {
 	return s.name
 }
 
+func checkParam(i interface{}, t reflect.Type) (reflect.Value, error) {
+	v := reflect.ValueOf(i)
+
+	// just return it's not a param
+	if v.Type() != reflect.TypeOf(&param{}) {
+		return v, nil
+	}
+
+	str := i.(*param).v
+
+	var err error
+	var p interface{}
+	switch t.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		p, err = strconv.ParseInt(str, 0, 64)
+
+	case reflect.Float32, reflect.Float64:
+		p, err = strconv.ParseFloat(str, 64)
+
+	case reflect.String:
+		p = str
+
+		// TODO other string -> to conversions
+
+	default:
+		// TODO handle
+	}
+
+	// last force covert to arg type
+	return reflect.ValueOf(p).Convert(t), err
+}
+
 // call relfects a StepFunc and calls it with any available arguments
 func (f *Feature) call(name string, s StepFunc, a ...interface{}) {
 	fn, args := f.stepFunc(s)
+	t := fn.Type()
 	if args != nil {
 		// if first arg *Step, inject it
-		if fn.Type().In(0) == reflect.TypeOf(&Step{}) {
+		if t.In(0) == reflect.TypeOf(&Step{}) {
 			args = args[:1]
 			args[0] = reflect.ValueOf(&Step{
 				Feature: f,
@@ -266,9 +311,17 @@ func (f *Feature) call(name string, s StepFunc, a ...interface{}) {
 			})
 		}
 
-		n := cap(args) - len(args) // number of args that comes predefined from stepfn
+		l := len(args)
+		n := cap(args) - l // number offset, if *Step is first arg
 		for i := 0; i < n; i++ {
-			args = append(args, reflect.ValueOf(a[i]))
+			v := t.In(i + l)
+
+			p, err := checkParam(a[i], v)
+			if err != nil {
+				// TODO handle
+			}
+
+			args = append(args, p)
 		}
 	}
 
@@ -287,15 +340,29 @@ func (f Feature) Stepf(fn StepFunc, a ...interface{}) {
 	f.call("", fn, a...)
 }
 
+type param struct {
+	v string
+}
+
 // Step looks up a step by name and calls it
 func (f Feature) Step(name string, a ...interface{}) {
 	var fn StepFunc
+	var args []interface{}
 
-	for _, v := range f.Steps {
-		if f, ok := v[name]; ok {
-			fn = f
+	for _, s := range f.Steps {
+		for _, v := range s {
+			m := v.reg.FindStringSubmatch(name)
+			if len(m) > 0 {
+				fn = v.fn
 
-			break
+				for i, v := range m {
+					if i > 0 {
+						args = append(args, &param{v})
+					}
+				}
+
+				break
+			}
 		}
 	}
 
@@ -305,7 +372,7 @@ func (f Feature) Step(name string, a ...interface{}) {
 		return // actual testing package will exit, just for testing
 	}
 
-	f.call(name, fn, a...)
+	f.call(name, fn, append(args, a...)...)
 }
 
 /*
