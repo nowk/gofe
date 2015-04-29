@@ -71,6 +71,8 @@ func checkFuncTestingReturnsFunc(t reflect.Type) (reflect.Type, bool) {
 	return p, p.Kind() == reflect.Func
 }
 
+var st = &Step{}
+
 // checkStep checks to make sure the StepFunc given for any step meets the
 // required implmenetation of func(Testing) func(...)
 //
@@ -95,11 +97,11 @@ func checkStep(fn StepFunc) error {
 	}
 
 	// check for *Step argument
-	s := reflect.TypeOf(&Step{})
+	s := reflect.TypeOf(st)
 	for i := 0; i < p.NumIn(); i++ {
 		a := p.In(i)
 		if i == 0 {
-			if a == reflect.TypeOf(Step{}) {
+			if a == reflect.TypeOf(*st) {
 				return fmt.Errorf("Step must be a pointer")
 			}
 
