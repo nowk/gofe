@@ -24,8 +24,6 @@ type Testing interface {
 	Skipped() bool
 }
 
-var tt Testing = &testing.T{}
-
 // StepFunc must implement a func(Testing) func(...) pattern
 type StepFunc interface{}
 
@@ -45,6 +43,8 @@ type Steps map[string]*step
 func NewSteps() Steps {
 	return make(Steps)
 }
+
+var tt Testing = &testing.T{}
 
 func checkFuncTesting(t reflect.Type) bool {
 	if t.NumIn() != 1 {
