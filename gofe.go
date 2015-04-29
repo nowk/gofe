@@ -396,7 +396,7 @@ func (f Feature) And(name string, a ...interface{}) {
 }
 
 /*
-_ prefixed shortcuts for alignment
+_ appended shortcuts for alignment
 
 		fe.Given(...)
 		fe.And__(...)
