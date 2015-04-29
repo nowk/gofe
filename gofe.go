@@ -8,20 +8,9 @@ import (
 	"testing"
 )
 
+// Testing implements testing.TB interface
 type Testing interface {
-	Error(...interface{})
-	Errorf(string, ...interface{})
-	Fail()
-	FailNow()
-	Failed() bool
-	Fatal(...interface{})
-	Fatalf(string, ...interface{})
-	Log(...interface{})
-	Logf(string, ...interface{})
-	Skip(...interface{})
-	SkipNow()
-	Skipf(string, ...interface{})
-	Skipped() bool
+	testing.TB
 }
 
 // StepFunc must implement a func(Testing) func(...) pattern
