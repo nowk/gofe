@@ -267,12 +267,12 @@ func (s Step) Name() string {
 func checkParam(i interface{}, t reflect.Type) (reflect.Value, error) {
 	v := reflect.ValueOf(i)
 
-	// just return it's not a param
-	if v.Type() != reflect.TypeOf(&param{}) {
-		return v, nil
+	par, ok := i.(*param)
+	if !ok {
+		return v, nil // just return it's not a param
 	}
 
-	str := i.(*param).v
+	str := par.v
 
 	var err error
 	var p interface{}
