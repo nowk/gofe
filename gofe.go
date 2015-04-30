@@ -404,16 +404,16 @@ _ appended shortcuts for alignment
 */
 
 func (f Feature) When_(name string, a ...interface{}) {
-	f.Step(name, a...)
+	f.When(name, a...)
 }
 
 func (f Feature) Then_(name string, a ...interface{}) {
-	f.Step(name, a...)
+	f.Then(name, a...)
 }
 
 func (f Feature) And_(name string, a ...interface{}) {
-	f.Step(name, a...)
+	f.And(name, a...)
 }
 func (f Feature) And__(name string, a ...interface{}) {
-	f.Step(name, a...)
+	f.And(name, a...)
 }
