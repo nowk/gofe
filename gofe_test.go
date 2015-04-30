@@ -204,7 +204,7 @@ func TestFeatureIsPassedAsFirstArgumentIfDefined(t *testing.T) {
 	assert.Equal(t, "Batman's full name is Bruce Wayne", tT.errorfs[1])
 }
 
-func TestFeatureCanOnlyBeTheFirstArg(t *testing.T) {
+func TestStepCanOnlyBeTheFirstArg(t *testing.T) {
 	s := NewSteps()
 	assert.Panic(t, "*Step must be the first argument", func() {
 		s.Add("a step", func(t Testing) func(string, *Step) {
@@ -215,7 +215,7 @@ func TestFeatureCanOnlyBeTheFirstArg(t *testing.T) {
 	})
 }
 
-func TestFeatureMustBeAPointer(t *testing.T) {
+func TestStepMustBeAPointer(t *testing.T) {
 	s := NewSteps()
 	assert.Panic(t, "Step must be a pointer", func() {
 		s.Add("a step", func(t Testing) func(Step) {
