@@ -226,6 +226,44 @@ func TestStepMustBeAPointer(t *testing.T) {
 	})
 }
 
+func TestIfStepArgIsNotGivenPassNilOrZeroToMeetArgLength(t *testing.T) {
+	tT := &tTesting{}
+
+	type MyStruct struct {
+		Name string
+	}
+
+	s := NewSteps()
+	s.Add("omit pointer", func(t Testing) func(*MyStruct) {
+		return func(m *MyStruct) {
+			if m == nil {
+				t.Logf("m was nil")
+			}
+		}
+	})
+	s.Add("omit zero value args",
+		func(t Testing) func(string, string, int, MyStruct) {
+			return func(a, b string, c int, m MyStruct) {
+				myStruct := MyStruct{}
+
+				if a == "" && b == "" && c == 0 && m == myStruct {
+					t.Logf("supplies zero values")
+				}
+			}
+		})
+
+	fe := New(tT, s)
+	fe.Step("omit pointer")
+	fe.Step("omit zero value args")
+
+	for i, v := range []string{
+		"m was nil",
+		"supplies zero values",
+	} {
+		assert.Equal(t, v, tT.logfs[i], v)
+	}
+}
+
 func TestCallAStepWithinAStep(t *testing.T) {
 	tT := &tTesting{}
 

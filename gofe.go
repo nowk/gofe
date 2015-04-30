@@ -302,14 +302,21 @@ func (f *Feature) call(name string, s StepFunc, a ...interface{}) {
 			})
 		}
 
-		l := len(args)
-		n := cap(args) - l // number offset, if *Step is first arg
-		for i := 0; i < n; i++ {
+		l := len(args)     // len of func args
+		m := cap(args) - l // number offset, if *Step is first arg
+		n := len(a)        // given args len
+		for i := 0; i < m; i++ {
 			v := t.In(i + l)
 
-			p, err := checkParam(a[i], v)
-			if err != nil {
-				// TODO handle
+			var p reflect.Value
+			if i < n {
+				var err error
+				p, err = checkParam(a[i], v)
+				if err != nil {
+					// TODO handle
+				}
+			} else {
+				p = reflect.Zero(v)
 			}
 
 			args = append(args, p)
