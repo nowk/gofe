@@ -287,43 +287,64 @@ func checkParam(i interface{}, t reflect.Type) (reflect.Value, error) {
 	return reflect.ValueOf(p).Convert(t), err
 }
 
+// argStep checks if first arg is *Step then injects it
+func argStep(args []reflect.Value, t reflect.Type, s *Step) []reflect.Value {
+	if t.In(0) != reflect.TypeOf(s) {
+		return args
+	}
+
+	args = args[:1]
+	args[0] = reflect.ValueOf(s)
+
+	return args
+}
+
+// argZero zero fills any remaining args that may not have been supplied
+func argZero(args []reflect.Value, t reflect.Type) []reflect.Value {
+	c := cap(args)
+	for i := len(args); i < c; i++ {
+		args = append(args, reflect.Zero(t.In(i)))
+	}
+
+	return args
+}
+
+// argv builds out the []reflect.Value to be sent on Call()
+func argv(args []reflect.Value,
+	t reflect.Type,
+	s *Step,
+	a ...interface{}) []reflect.Value {
+
+	if cap(args) == 0 {
+		return nil
+	}
+
+	args = argStep(args, t, s)
+
+	l := len(args) // offset, possibly from argStep
+	for i, v := range a {
+		p, err := checkParam(v, t.In(i+l))
+		if err != nil {
+			// TODO handle
+		}
+
+		args = append(args, p)
+	}
+
+	return argZero(args, t)
+}
+
 // call relfects a StepFunc and calls it with any available arguments
 func (f *Feature) call(name string, s StepFunc, a ...interface{}) {
 	fn, args := f.stepFunc(s)
-	t := fn.Type()
-	if args != nil {
-		// if first arg *Step, inject it
-		if t.In(0) == reflect.TypeOf(&Step{}) {
-			args = args[:1]
-			args[0] = reflect.ValueOf(&Step{
-				Feature: f,
 
-				name: name,
-			})
-		}
+	st := &Step{
+		Feature: f,
 
-		l := len(args)     // len of func args
-		m := cap(args) - l // number offset, if *Step is first arg
-		n := len(a)        // given args len
-		for i := 0; i < m; i++ {
-			v := t.In(i + l)
-
-			var p reflect.Value
-			if i < n {
-				var err error
-				p, err = checkParam(a[i], v)
-				if err != nil {
-					// TODO handle
-				}
-			} else {
-				p = reflect.Zero(v)
-			}
-
-			args = append(args, p)
-		}
+		name: name,
 	}
 
-	fn.Call(args)
+	fn.Call(argv(args, fn.Type(), st, a...))
 }
 
 // Stepf calls a given StepFunc directly
