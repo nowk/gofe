@@ -289,12 +289,10 @@ func checkParam(i interface{}, t reflect.Type) (reflect.Value, error) {
 
 // argStep checks if first arg is *Step then injects it
 func argStep(args []reflect.Value, t reflect.Type, s *Step) []reflect.Value {
-	if t.In(0) != reflect.TypeOf(s) {
-		return args
+	if t.In(0) == reflect.TypeOf(s) {
+		args = args[:1]
+		args[0] = reflect.ValueOf(s)
 	}
-
-	args = args[:1]
-	args[0] = reflect.ValueOf(s)
 
 	return args
 }
