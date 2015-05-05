@@ -514,7 +514,7 @@ func TestUseRegexToParseArgValues(t *testing.T) {
 	}
 }
 
-func TestIgnoringArgsFromCallByNotDefningArgInStepFunc(t *testing.T) {
+func TestOmittingArgsFromCallByNotDefningArgInStepFunc(t *testing.T) {
 	tT := &tTesting{}
 
 	s := NewSteps()
