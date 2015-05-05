@@ -138,6 +138,10 @@ func (c Context) Get(k string) (interface{}, bool) {
 	return v, true
 }
 
+func (c Context) Set(k string, v interface{}) {
+	c[k] = v
+}
+
 type Feature struct {
 	T       Testing
 	Steps   []Steps

@@ -414,8 +414,8 @@ func TestSetupAllowsSetupAndTeardown(t *testing.T) {
 
 	fe := New(tT, s)
 	td := fe.Setup(func(f *Feature) func() {
-		f.Context["a"] = "a"
-		f.Context["n"] = 9
+		f.Context.Set("a", "a")
+		f.Context.Set("n", 9)
 
 		f.T.Logf("You got mail")
 
