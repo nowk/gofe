@@ -506,3 +506,38 @@ func TestUseRegexToParseArgValues(t *testing.T) {
 		assert.Equal(t, v, tT.logfs[i], v)
 	}
 }
+
+func TestIgnoringArgsFromCallByNotDefningArgInStepFunc(t *testing.T) {
+	tT := &tTesting{}
+
+	s := NewSteps()
+	s.Add(`^delete (\d+)(st|nd|rd|th) label$`, func(t Testing) func(int) {
+		return func(n int) {
+			t.Logf("delete label #%d", n)
+		}
+	})
+	s.Add(`^edit (\d+)(st|nd|rd|th) label$`, func(t Testing) func(*Step, int) {
+		return func(_ *Step, n int) {
+			t.Logf("edit label #%d", n)
+		}
+	})
+
+	fe := New(tT, s)
+	fe.Step("delete 1st label")
+	fe.Step("delete 2nd label")
+	fe.Step("delete 3rd label")
+	fe.Step("delete 4th label")
+
+	fe.Step("edit 1st label")
+	fe.Step("edit 2nd label")
+	fe.Step("edit 3rd label")
+	fe.Step("edit 4th label")
+
+	for i := 0; i < 4; i++ {
+		assert.Equal(t, fmt.Sprintf("delete label #%d", i+1), tT.logfs[i])
+	}
+
+	for i := 0; i < 4; i++ {
+		assert.Equal(t, fmt.Sprintf("edit label #%d", i+1), tT.logfs[i+4])
+	}
+}

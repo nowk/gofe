@@ -313,7 +313,8 @@ func argv(args []reflect.Value,
 	s *Step,
 	a ...interface{}) []reflect.Value {
 
-	if cap(args) == 0 {
+	c := cap(args)
+	if c == 0 {
 		return nil
 	}
 
@@ -321,6 +322,10 @@ func argv(args []reflect.Value,
 
 	l := len(args) // offset, possibly from argStep
 	for i, v := range a {
+		if len(args) == c {
+			break // all arg index assigned
+		}
+
 		p, err := checkParam(v, t.In(i+l))
 		if err != nil {
 			// TODO handle
