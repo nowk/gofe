@@ -494,14 +494,21 @@ func TestUseRegexToParseArgValues(t *testing.T) {
 				t.Logf("float: %.2f", sec)
 			}
 		})
+	s.Add(`(\d) \+ (\d) = (\d)`, func(t Testing) func(int, int, int) {
+		return func(a, b, c int) {
+			t.Logf("%d + %d = %d", a, b, c)
+		}
+	})
 
 	fe := New(tT, s)
 	fe.Step("I login as Batman 2 times")
 	fe.Step("It took less than 0.5 seconds")
+	fe.Step("4 + 5 = 9")
 
 	for i, v := range []string{
 		"string: Batman, int: 2",
 		"float: 0.50",
+		"4 + 5 = 9",
 	} {
 		assert.Equal(t, v, tT.logfs[i], v)
 	}
