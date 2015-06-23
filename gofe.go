@@ -157,7 +157,9 @@ func New(t Testing, s ...Steps) *Feature {
 }
 
 func (f *Feature) SetContext(c map[string]interface{}) {
-	f.Context = c
+	for k, v := range c {
+		f.Context[k] = v
+	}
 }
 
 // getc looks up a context by type and then by key returning it's reflected
