@@ -400,6 +400,41 @@ func TestCExpandsOnTypeIfDiIsNil(t *testing.T) {
 	assert.Equal(t, "a: a, u: Batman, n: 9", tT.logfs[0])
 }
 
+type user struct {
+	name string
+}
+
+func (u user) Name() string {
+	return u.name
+}
+
+func TestCInterfaceArguments(t *testing.T) {
+	tT := &tTesting{}
+
+	type User interface {
+		Name() string
+	}
+
+	s := NewSteps()
+	s.Add("a step", func(t Testing) func(*Step) {
+		return func(s *Step) {
+			s.C([]string{"a", "b"}, func(a User, b User) {
+				t.Logf("user names %s, %s", a.Name(), b.Name())
+			})
+		}
+	})
+
+	fe := New(tT, s)
+	fe.SetContext(map[string]interface{}{
+		"a": &user{"foo"},
+		"b": user{"bar"},
+	})
+	fe.Step("a step")
+
+	// assert.Equal(t, "User: invalid context injection key", tT.fatalfs[0])
+	assert.Equal(t, "user names foo, bar", tT.logfs[0])
+}
+
 func TestSetupAllowsSetupAndTeardown(t *testing.T) {
 	tT := &tTesting{}
 

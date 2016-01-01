@@ -168,8 +168,7 @@ func (f Feature) getc(t reflect.Type, key string) (reflect.Value, error) {
 	var v, null reflect.Value
 
 	for k, c := range f.Context {
-		vo := reflect.ValueOf(c)
-		if vo.Type() == t {
+		if vo := reflect.ValueOf(c); isGettable(vo, t) {
 			v = vo
 
 			// if key == "" it's assumed the di value was nil and returning upon a
@@ -179,12 +178,27 @@ func (f Feature) getc(t reflect.Type, key string) (reflect.Value, error) {
 			}
 		}
 	}
+
 	// no matched type was found
 	if reflect.DeepEqual(v, null) {
 		return v, fmt.Errorf("%s: invalid context injection type", t.Name())
 	}
 
 	return v, fmt.Errorf("%s: invalid context injection key", key)
+}
+
+func isGettable(v reflect.Value, t reflect.Type) bool {
+	var vEqt = v.Type() == t
+
+	if t.Kind() != reflect.Interface {
+		return vEqt
+	}
+	switch v.Kind() {
+	case reflect.Ptr, reflect.Struct, reflect.Interface:
+		return vEqt || v.Type().Implements(t)
+	}
+
+	return vEqt
 }
 
 // C expands the Context objects to fn as type asserted arguments of fn. To
